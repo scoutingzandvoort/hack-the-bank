@@ -30,4 +30,4 @@ Laat dit document niet slingeren! Als buitenstaanders onze wordlist en de kraak-
 
 HOUDT MOED, BUFFALO'S!
 
-<p align="center"><img width="100" src="WEF.png" width="200"/></p>
+<p align="center"><img width="100" src="WEF.png"/></p>
