@@ -29,3 +29,5 @@ LET OP: Omdat we nogal eens een wachtwoord vergeten, staat onze centrale "loper"
 Laat dit document niet slingeren! Als buitenstaanders onze wordlist en de kraak-tool in handen krijgen, kunnen ze onze volledige buit onderscheppen.
 
 HOUDT MOED, BUFFALO'S!
+
+<p align="center"><img width="100" src="WEF.png" width="200"/></p>
